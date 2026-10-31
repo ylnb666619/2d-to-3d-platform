@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__</title>
+<style>
+  :root { color-scheme: dark; --ink:#e6edf7; --muted:#93a3bd; --line:#1f2a44;
+          --panel:#0f172a; --accent:#22d3ee; }
+  * { box-sizing: border-box; }
+  body { margin:0; height:100vh; display:flex; flex-direction:column; background:#0b1220;
+         color:var(--ink); font:14px/1.6 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif; }
+  header { display:flex; align-items:center; gap:14px; padding:10px 18px;
+           background:#0f172a; border-bottom:1px solid var(--line); flex:0 0 auto; }
+  .brand { font-weight:600; letter-spacing:.06em; }
+  a.brand { color:inherit; text-decoration:none; }
+  a.brand:hover { color:var(--accent); }
+  a.back { color:var(--muted); text-decoration:none; font-size:12.5px;
+           border:1px solid var(--line); border-radius:999px; padding:3px 11px; }
+  a.back:hover { color:var(--ink); border-color:#2f4a72; }
+  .title { font-weight:600; }
+  .meta { color:var(--muted); font-size:12.5px; }
+  .spacer { margin-left:auto; }
+  .ghost { border:1px solid #2b3b5c; background:transparent; color:#cbd5e1;
+           border-radius:7px; padding:5px 12px; font:inherit; font-size:12.5px;
+           cursor:pointer; text-decoration:none; }
+  .ghost:hover { background:#16233a; }
+  main { flex:1 1 auto; display:grid; grid-template-columns:230px minmax(0,1fr) 300px; min-height:0; }
+  aside { background:var(--panel); overflow:auto; }
+  aside.rail { border-right:1px solid var(--line); padding-bottom:20px; }
+  aside.info { border-left:1px solid var(--line); padding:14px 16px; }
+  h3 { font-size:11.5px; text-transform:uppercase; letter-spacing:.12em; color:var(--muted);
+       font-weight:600; margin:16px 14px 6px; }
+  aside.info h3 { margin:14px 0 6px; }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; padding:0 14px; }
+  .chips button { border:1px solid var(--line); background:transparent; color:#cbd5e1;
+                  border-radius:999px; padding:4px 11px; font:inherit; font-size:12.5px;
+                  cursor:pointer; }
+  .chips button.active { background:#f8fafc; color:#0f172a; border-color:#f8fafc; }
+  .layers { display:flex; flex-direction:column; gap:2px; padding:0 14px; }
+  .layers label { display:flex; align-items:center; gap:8px; padding:3px 0;
+                  font-size:13px; color:#cbd5e1; cursor:pointer; }
+  .swatch { width:10px; height:10px; border-radius:3px; border:1px solid rgba(255,255,255,.2); }
+  .layers .count { margin-left:auto; color:var(--muted); font-size:12px; }
+  .slider { padding:4px 14px 10px; }
+  .slider label { display:flex; justify-content:space-between; font-size:12px;
+                  color:var(--muted); margin-bottom:2px; }
+  .slider input { width:100%; accent-color:var(--accent); }
+  .stage { position:relative; min-height:0; background:#0b1220; }
+  #view3d { width:100%; height:100%; display:block; touch-action:none; }
+  .viewbar { position:absolute; left:14px; bottom:14px; display:flex; gap:4px;
+             background:rgba(15,23,42,.72); padding:4px; border-radius:9px; }
+  .viewbar button { border:0; background:transparent; color:#cbd5e1; padding:5px 10px;
+                    border-radius:6px; font:inherit; font-size:12.5px; cursor:pointer; }
+  .viewbar button:hover { background:rgba(148,163,184,.18); }
+  .viewbar button.active { background:#f8fafc; color:#0f172a; }
+  .hint { position:absolute; inset:auto 0 0 0; padding:9px 14px; font-size:12px;
+          color:#94a3b8; background:rgba(15,23,42,.72); pointer-events:none; }
+  .hoverTag { position:absolute; pointer-events:none; background:#f8fafc; color:#0f172a;
+              font-size:12px; padding:3px 8px; border-radius:6px; white-space:nowrap;
+              box-shadow:0 4px 14px rgba(0,0,0,.35); transform:translate(12px,12px); }
+  [hidden] { display:none !important; }
+  .pickCard { border:1px solid var(--line); border-radius:9px; padding:10px 12px; }
+  .pickCard .name { font-weight:600; font-size:13.5px; }
+  .pickCard .meta { color:var(--muted); font-size:12px; margin-top:3px; }
+  .statRow { display:flex; justify-content:space-between; padding:3px 0;
+             border-bottom:1px solid #16233a; font-size:12.5px; }
+  .statRow span:last-child { color:#cbd5e1; font-variant-numeric:tabular-nums; }
+  .actions { display:flex; flex-direction:column; gap:6px; padding:0 14px; }
+  .actions a, .actions button { display:block; width:100%; text-align:center;
+    border:1px solid #2b3b5c; background:transparent; color:#cbd5e1; border-radius:7px;
+    padding:7px 10px; font:inherit; font-size:12.5px; cursor:pointer; text-decoration:none; }
+  .actions a:hover, .actions button:hover { background:#16233a; }
+</style></head>
+<body>
+<header>
+  <a class="brand" href="/">重装武神</a>
+  <a class="back" href="/">← 首页</a>
+  <span class="title">__TITLE__</span>
+  <span class="meta">__META__</span>
+  <span class="spacer"></span>
+  __ACTIONS__
+</header>
+<main>
+  <aside class="rail">
+    <h3>楼层</h3>
+    <div class="chips" id="floorList"></div>
+    <h3>构件</h3>
+    <div class="layers" id="catList">__CATS__</div>
+    <h3>爆炸</h3>
+    <div class="slider">
+      <label><span>楼层分离</span><span id="explodeValue">0%</span></label>
+      <input type="range" id="explode" min="0" max="100" value="0">
+    </div>
+    <h3>剖切</h3>
+    <div class="slider">
+      <label><span>剖切高度</span><span id="cutValue">关</span></label>
+      <input type="range" id="cut" min="0" max="100" value="100">
+    </div>
+  </aside>
+  <section class="stage" id="modelPane">
+    <canvas id="view3d"></canvas>
+    <div class="hoverTag" id="hoverTag" hidden></div>
+    <div class="viewbar">
+      <button data-view="iso" class="active">轴测</button>
+      <button data-view="front">正立面</button>
+      <button data-view="side">侧立面</button>
+      <button data-view="top">俯视</button>
+      <button data-view="fit">全景</button>
+    </div>
+    <div class="hint">左键旋转 · 滚轮缩放 · 右键平移 · 单击构件看名称</div>
+  </section>
+  <aside class="info">
+    <h3>构件</h3>
+    <div id="pick"><div class="pickCard"><div class="meta">在模型里单击一个构件。</div></div></div>
+    <h3>统计</h3>
+    <div id="sceneStats"></div>
+  </aside>
+</main>
+<script>const CAT_COLOUR = __COLOURS__; const CAT_LABEL = __LABELS__;</script>
+<script type="application/json" id="sceneData">__SCENE__</script>
+<script>__JS__</script>
+<script>
+  document.getElementById('modelPane').hidden = false;
+  window.init3d();
+  var stepButton = document.getElementById('openStep');
+  if (stepButton) {
+    stepButton.addEventListener('click', function () {
+      stepButton.disabled = true;
+      stepButton.textContent = '正在打开…';
+      fetch('/api/viewer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ file: stepButton.dataset.file })
+      }).then(function (r) { return r.json(); }).then(function (res) {
+        stepButton.disabled = false;
+        stepButton.textContent = '用 CAD 查看器看 STEP';
+        if (res.ok) window.open(res.url, '_blank');
+      }).catch(function () {
+        stepButton.disabled = false;
+        stepButton.textContent = '用 CAD 查看器看 STEP';
+      });
+    });
+  }
+</script>
+</body></html>

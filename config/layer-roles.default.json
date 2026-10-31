@@ -1,0 +1,15 @@
+{
+  "_comment": "Layer name patterns, checked in this order. A layer matches a role when its name equals a pattern, contains a CJK pattern, or has a token equal to a pattern. Edit freely: the classifier reports every layer it could not place.",
+  "roles": {
+    "wall": ["墙", "墙体", "剪力墙", "wall", "wal", "qiang", "qiangti"],
+    "column": ["柱", "柱子", "框架柱", "构造柱", "column", "col", "zhu"],
+    "window": ["窗", "窗户", "门窗", "window", "win", "chuang"],
+    "door": ["门", "door", "men"],
+    "axis": ["轴", "轴线", "轴网", "axis", "grid", "zhou"],
+    "dim": ["标注", "尺寸", "尺寸标注", "dim", "dimension"],
+    "text": ["文字", "文本", "text", "txt"],
+    "hatch": ["填充", "hatch", "hat", "solid"],
+    "frame": ["图框", "边框", "标题栏", "frame", "title", "border"]
+  },
+  "priority": ["wall", "column", "window", "door", "axis", "dim", "text", "hatch", "frame"]
+}

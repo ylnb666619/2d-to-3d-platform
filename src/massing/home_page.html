@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>重装武神</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg:#0b1220; --panel:#121b2e; --panel2:#0f172a; --line:#1f2a44;
+    --ink:#e6edf7; --muted:#93a3bd; --accent:#22d3ee; --accent2:#0f766e;
+    --warn:#fbbf24; --bad:#f87171; --ok:#34d399;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display:none !important; }
+  body {
+    margin:0; min-height:100vh; background:
+      radial-gradient(1200px 600px at 15% -10%, #14304a 0%, transparent 60%),
+      radial-gradient(900px 500px at 95% 0%, #123145 0%, transparent 55%), var(--bg);
+    color:var(--ink);
+    font:14px/1.6 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
+  }
+  .wrap { max-width:1180px; margin:0 auto; padding:26px 28px 60px; }
+  header { display:flex; align-items:baseline; gap:14px; margin-bottom:26px; }
+  .brand { font-size:19px; font-weight:650; letter-spacing:.08em; }
+  .brand span { color:var(--accent); }
+  .tag { color:var(--muted); font-size:12.5px; }
+  .where { margin-left:auto; color:var(--muted); font-size:12px; text-align:right; }
+  h2 { font-size:12px; text-transform:uppercase; letter-spacing:.14em; color:var(--muted);
+       font-weight:600; margin:30px 0 12px; }
+  .recent { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(215px, 1fr);
+            gap:10px; overflow-x:auto; padding-bottom:6px; }
+  .card { background:linear-gradient(180deg, #131e33 0%, #101828 100%);
+          border:1px solid var(--line); border-radius:14px; padding:14px 16px;
+          transition:border-color .15s, transform .15s; }
+  .recent .card { cursor:pointer; min-width:215px; }
+  .recent .card:hover { border-color:#2f4a72; transform:translateY(-2px); }
+  .card .name { font-weight:600; font-size:14px; overflow:hidden; text-overflow:ellipsis;
+                white-space:nowrap; }
+  .card .meta { color:var(--muted); font-size:12px; margin-top:4px; line-height:1.5; }
+  .card .path { color:#5f7291; font-size:11.5px; margin-top:6px; overflow:hidden;
+                text-overflow:ellipsis; white-space:nowrap; direction:rtl; text-align:left; }
+  .missing { border-color:#3d2b2b; }
+  .recent .card .go { margin-top:8px; font-size:12px; color:var(--accent); opacity:.85; }
+  .missing .name { color:#c99; }
+  .modules { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:14px; }
+  @media (max-width: 900px) { .modules { grid-template-columns:1fr; } }
+  .module { display:flex; flex-direction:column; gap:10px; min-height:216px; }
+  .module h3 { margin:0; font-size:15px; font-weight:650; display:flex; align-items:center; gap:8px; }
+  .module h3 .dot { width:7px; height:7px; border-radius:50%; background:var(--accent); }
+  .module p { margin:0; color:var(--muted); font-size:12.5px; }
+  .grow { flex:1 1 auto; }
+  input[type=text], textarea, input[type=file] {
+    width:100%; background:#0b1526; border:1px solid var(--line); color:var(--ink);
+    border-radius:9px; padding:9px 11px; font:inherit; font-size:13px; outline:none;
+  }
+  input[type=text]:focus, textarea:focus { border-color:#2b5a74; }
+  textarea { resize:vertical; min-height:78px; }
+  button { border:1px solid var(--line); background:#16233a; color:var(--ink);
+           border-radius:9px; padding:9px 16px; font:inherit; font-size:13px;
+           cursor:pointer; font-weight:600; transition:background .15s; }
+  button:hover { background:#1d2c48; }
+  button.primary { background:var(--accent2); border-color:var(--accent2); color:#eafffb; }
+  button.primary:hover { background:#0d9488; }
+  button:disabled { opacity:.5; cursor:default; }
+  .row { display:flex; gap:8px; }
+  .row > * { flex:1 1 auto; }
+  .row > button { flex:0 0 auto; }
+  .note { font-size:12px; color:var(--muted); min-height:18px; }
+  .note.ok { color:var(--ok); }
+  .note.bad { color:var(--bad); }
+  .note.work { color:var(--warn); }
+  .drop { border:1px dashed #2b3b5c; border-radius:10px; padding:14px; text-align:center;
+          color:var(--muted); font-size:12.5px; }
+  .drop.hot { border-color:var(--accent); color:var(--ink); background:#0e1c2f; }
+  .chips { display:flex; gap:6px; flex-wrap:wrap; }
+  .chip { font-size:11.5px; color:var(--muted); border:1px solid var(--line);
+          border-radius:999px; padding:2px 9px; cursor:pointer; }
+  .chip:hover { color:var(--ink); border-color:#2f4a72; }
+  footer { margin-top:34px; color:#4a5c78; font-size:11.5px; text-align:center; }
+</style></head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">重装<span>武神</span></div>
+    <div class="tag">DXF 平面图 → 房间、门窗、三维体块、STEP / IFC</div>
+    <div class="where" id="where">本地服务 · 127.0.0.1:3246</div>
+  </header>
+
+  <h2>最近打开</h2>
+  <div class="recent" id="recent"><div class="card"><div class="name">还没有读过图纸</div>
+    <div class="meta">用下面的「识图」选一个 DXF，读过的会出现在这里。</div></div></div>
+
+  <h2>生成过的模型</h2>
+  <div class="recent" id="models"><div class="card"><div class="name">还没有生成过模型</div>
+    <div class="meta">「一句话生成建模」，或者读图后在模型页导出 STEP，都会留在这里。</div></div></div>
+
+  <h2>模块</h2>
+  <div class="modules">
+    <section class="card module">
+      <h3><i class="dot"></i>识图</h3>
+      <p>选一个建施图：DXF 走矢量解析，PDF 走位图识图（逐页找房间）。</p>
+      <div class="grow"></div>
+      <input type="file" id="dxfFile" accept=".dxf,.pdf">
+      <input type="text" id="dxfPath" placeholder="或者填路径：D:\...\建施图.dxf">
+      <input type="text" id="groundPath" placeholder="首层单独文件（可选）：D:\...\一层块.dxf">
+      <div class="row"><button class="primary" id="runRead" disabled>识图并建模</button></div>
+      <div class="note" id="readNote"></div>
+    </section>
+
+    <section class="card module">
+      <h3><i class="dot"></i>一句话生成建模</h3>
+      <p>写一句尺寸，生成带楼板、外墙、柱网的体块，直接进查看器。</p>
+      <textarea id="prompt" placeholder="例如：3 层，层高 3.6 米，40×18 米，柱距 7.2 米"></textarea>
+      <div class="chips">
+        <span class="chip" data-fill="5 层，层高 3.3，60×20，柱距 7.5">5 层教学楼</span>
+        <span class="chip" data-fill="2 层，层高 4.5，24×16，柱距 8">2 层厂房</span>
+        <span class="chip" data-fill="1 层，层高 6，30×30">单层大厅</span>
+      </div>
+      <div class="grow"></div>
+      <div class="note" id="buildNote"></div>
+      <div class="row"><button class="primary" id="runBuild">生成模型</button>
+        <button id="openBuilt" disabled>查看模型</button></div>
+    </section>
+
+    <section class="card module">
+      <h3><i class="dot"></i>文件预览</h3>
+      <p>STEP / IFC / GLB 用查看器打开；DXF 直接进识图。</p>
+      <div class="drop" id="drop">把文件拖到这里，或者
+        <label style="color:var(--accent);cursor:pointer">选择文件
+          <input type="file" id="anyFile" hidden accept=".step,.stp,.ifc,.glb,.gltf,.dxf,.pdf">
+        </label>
+      </div>
+      <div class="grow"></div>
+      <div class="note" id="previewNote"></div>
+      <div class="row"><button id="openPreview" disabled>打开</button></div>
+    </section>
+  </div>
+
+  <footer>文件都在本机处理，不上传任何服务器。</footer>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var readNote = document.getElementById('readNote');
+  var buildNote = document.getElementById('buildNote');
+  var previewNote = document.getElementById('previewNote');
+  var runRead = document.getElementById('runRead');
+  var runBuild = document.getElementById('runBuild');
+  var openBuilt = document.getElementById('openBuilt');
+  var openPreview = document.getElementById('openPreview');
+  var recentBox = document.getElementById('recent');
+  var modelsBox = document.getElementById('models');
+  var drop = document.getElementById('drop');
+
+  var dropped = null;
+  var previewUrl = '';
+  var previewKind = '';
+  var builtStep = '';
+  var running = false;
+
+  function note(el, text, kind) {
+    if (!el) return;
+    el.textContent = text || '';
+    el.className = 'note' + (kind ? ' ' + kind : '');
+  }
+
+  function watch(id, el, prefix, done) {
+    var started = Date.now();
+    function step() {
+      fetch('/api/jobs/' + id).then(function (r) { return r.json(); }).then(function (job) {
+        if (job.state === 'running') {
+          var secs = Math.round((Date.now() - started) / 1000);
+          note(el, prefix + '　' + (job.step || '') + '　' + secs + 's', 'work');
+          setTimeout(step, 800);
+          return;
+        }
+        done(job);
+      }).catch(function (e) { note(el, String(e), 'bad'); running = false; });
+    }
+    step();
+  }
+
+  function formatSize(bytes) {
+    if (!bytes) return '—';
+    if (bytes > 1e6) return (bytes / 1e6).toFixed(1) + ' MB';
+    return Math.round(bytes / 1024) + ' KB';
+  }
+
+  // --- generated models -----------------------------------------------
+  function openModel(file, el) {
+    if (!file) { note(el, '还没有生成模型', 'bad'); return; }
+    location.href = '/view?m=' + encodeURIComponent(file);
+  }
+
+  function loadModels() {
+    fetch('/api/models').then(function (r) { return r.json(); }).then(function (data) {
+      if (!data.ok || !data.items.length) return;
+      modelsBox.textContent = '';
+      data.items.forEach(function (item) {
+        var card = document.createElement('div');
+        card.className = 'card' + (item.exists ? '' : ' missing');
+        var name = document.createElement('div');
+        name.className = 'name';
+        name.textContent = item.name || (item.file || '').split(/[\\/]/).pop();
+        var meta = document.createElement('div');
+        meta.className = 'meta';
+        var bits = [item.kind === 'generated' ? '一句话建模' : '图纸导出'];
+        if (item.solids) bits.push(item.solids + ' 个实体');
+        if (item.volume) bits.push(item.volume + ' m³');
+        if (item.bytes) bits.push(formatSize(item.bytes));
+        if (item.at) bits.push(item.at.replace('T', ' ').slice(5, 16));
+        if (!item.exists) bits.push('文件已删除');
+        meta.textContent = bits.join(' · ');
+        var path = document.createElement('div');
+        path.className = 'path';
+        path.textContent = item.sentence || item.file;
+        card.appendChild(name);
+        card.appendChild(meta);
+        card.appendChild(path);
+        if (item.exists) {
+          card.addEventListener("click", function () { openModel(item.file, buildNote); });
+        }
+        modelsBox.appendChild(card);
+      });
+    }).catch(function () {});
+  }
+
+  // --- recent ---------------------------------------------------------
+  function loadRecent() {
+    fetch('/api/history').then(function (r) { return r.json(); }).then(function (data) {
+      if (!data.ok || !data.items.length) return;
+      recentBox.textContent = '';
+      data.items.forEach(function (item) {
+        var card = document.createElement('div');
+        card.className = 'card' + (item.exists ? '' : ' missing');
+        var name = document.createElement('div');
+        name.className = 'name';
+        name.textContent = item.name || item.source;
+        var meta = document.createElement('div');
+        meta.className = 'meta';
+        var bits = [];
+        if (item.kind === 'pdf') {
+          if (item.pages) bits.push(item.pages + ' 页');
+          if (item.rooms) bits.push(item.rooms + ' 个房间');
+          bits.push('位图识图');
+        } else {
+          if (item.plans) bits.push(item.plans + ' 张平面');
+          if (item.items) bits.push(item.items + ' 构件');
+        }
+        if (item.at) bits.push(item.at.replace('T', ' ').slice(0, 16));
+        if (!item.exists) bits.push('文件已不在原处');
+        meta.textContent = bits.join(' · ') || '已读';
+        var path = document.createElement('div');
+        path.className = 'path';
+        path.textContent = item.source;
+        card.appendChild(name);
+        card.appendChild(meta);
+        card.appendChild(path);
+        if (item.exists) {
+          var go = document.createElement('div');
+          go.className = 'go';
+          go.textContent = '查看项目 →';
+          card.appendChild(go);
+          card.addEventListener('click', function () {
+            note(readNote, '正在打开 ' + item.name, 'work');
+            if (item.kind === 'pdf') startPdf({ path: item.source }, readNote);
+            else startJob({ path: item.source, ground: item.ground || '' }, readNote, true);
+          });
+        }
+        recentBox.appendChild(card);
+      });
+    }).catch(function () {});
+  }
+
+  // --- read -----------------------------------------------------------
+  function readInput() {
+    var file = document.getElementById('dxfFile').files[0] || dropped;
+    var path = document.getElementById('dxfPath').value.trim();
+    var ground = document.getElementById('groundPath').value.trim();
+    return { file: file, path: path, ground: ground };
+  }
+
+  function syncRead() {
+    var input = readInput();
+    runRead.disabled = running || (!input.file && !input.path);
+  }
+
+  function startJob(payload, el, thenGo) {
+    if (running) return;
+    running = true;
+    runRead.disabled = true;
+    var body;
+    var headers = {};
+    if (payload.form) {
+      body = payload.form;
+    } else {
+      body = JSON.stringify(payload);
+      headers['Content-Type'] = 'application/json';
+    }
+    note(el, '开始…', 'work');
+    fetch('/api/jobs', { method: 'POST', headers: headers, body: body })
+      .then(function (r) { return r.json(); })
+      .then(function (job) {
+        if (!job.ok) { note(el, job.error || '启动失败', 'bad'); running = false; syncRead(); return; }
+        watch(job.id, el, '读取中', function (done) {
+          running = false;
+          syncRead();
+          if (done.state === 'done') {
+            note(el, '完成，正在进入…', 'ok');
+            location.href = '/reading.html?t=' + Date.now();
+          } else {
+            note(el, '失败：' + (done.error || ''), 'bad');
+          }
+        });
+      })
+      .catch(function (e) { note(el, String(e), 'bad'); running = false; syncRead(); });
+  }
+
+  function startPdf(payload, el) {
+    if (running) return;
+    running = true;
+    note(el, '开始识图（位图，逐页读）…', 'work');
+    var body;
+    var headers = {};
+    if (payload.form) body = payload.form;
+    else { body = JSON.stringify(payload); headers['Content-Type'] = 'application/json'; }
+    fetch('/api/pdf', { method: 'POST', headers: headers, body: body })
+      .then(function (r) { return r.json(); })
+      .then(function (job) {
+        if (!job.ok) { note(el, job.error || '启动失败', 'bad'); running = false; return; }
+        watch(job.id, el, '识图中', function (done) {
+          running = false;
+          if (done.state === 'done') {
+            note(el, '完成，正在进入…', 'ok');
+            location.href = done.url || '/pdf.html';
+          } else {
+            note(el, '失败：' + (done.error || ''), 'bad');
+          }
+        });
+      })
+      .catch(function (e) { note(el, String(e), 'bad'); running = false; });
+  }
+
+  runRead.addEventListener('click', function () {
+    var input = readInput();
+    if (!input.file && !input.path) return;
+    var name = (input.file && input.file.name) || input.path;
+    if (/\.pdf$/i.test(name)) {
+      var pdfForm = new FormData();
+      if (input.file) pdfForm.append('file', input.file, input.file.name);
+      else pdfForm.append('path', input.path);
+      startPdf({ form: pdfForm }, readNote);
+      return;
+    }
+    var form = new FormData();
+    if (input.file) form.append('file', input.file, input.file.name);
+    else form.append('path', input.path);
+    if (input.ground) form.append('ground', input.ground);
+    startJob({ form: form }, readNote, true);
+  });
+
+  ['dxfFile', 'dxfPath', 'groundPath'].forEach(function (id) {
+    var el = document.getElementById(id);
+    el.addEventListener('input', syncRead);
+    el.addEventListener('change', syncRead);
+  });
+
+  // --- one sentence ---------------------------------------------------
+  runBuild.addEventListener('click', function () {
+    var text = document.getElementById('prompt').value.trim();
+    if (!text || running) return;
+    running = true;
+    runBuild.disabled = true;
+    openBuilt.disabled = true;
+    note(buildNote, '正在生成…', 'work');
+    fetch('/api/build', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: text })
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (job) {
+        if (!job.ok) { note(buildNote, job.error || '启动失败', 'bad'); running = false; runBuild.disabled = false; return; }
+        watch(job.id, buildNote, '生成中', function (done) {
+          running = false;
+          runBuild.disabled = false;
+          if (done.state === 'done') {
+            var spec = (done.result || {}).sentence || '';
+            builtStep = (done.files || {}).step || '';
+            note(buildNote, '已生成：' + spec + '　' + ((done.result || {}).solids || 0) + ' 个实体', 'ok');
+            openBuilt.disabled = false;
+            loadModels();
+          } else {
+            note(buildNote, '失败：' + (done.error || ''), 'bad');
+          }
+        });
+      })
+      .catch(function (e) { note(buildNote, String(e), 'bad'); running = false; runBuild.disabled = false; });
+  });
+
+  document.querySelectorAll('.chip').forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      document.getElementById('prompt').value = chip.dataset.fill;
+    });
+  });
+
+  openBuilt.addEventListener('click', function () {
+    openModel(builtStep, buildNote);
+  });
+
+  // --- preview --------------------------------------------------------
+  function preview(file) {
+    if (!file) return;
+    note(previewNote, '上传 ' + file.name + '…', 'work');
+    var form = new FormData();
+    form.append('file', file, file.name);
+    fetch('/api/preview', { method: 'POST', body: form })
+      .then(function (r) { return r.json(); })
+      .then(function (res) {
+        if (!res.ok) { note(previewNote, res.error || '打不开', 'bad'); return; }
+        previewUrl = res.url || '';
+        previewKind = res.kind || '';
+        var bits = [res.name, formatSize(res.size), res.kind];
+        if (res.kind === 'dxf' || res.kind === 'pdf') bits.push('→ 识图');
+        note(previewNote, bits.join('　·　'), 'ok');
+        openPreview.disabled = false;
+        openPreview.textContent = (res.kind === 'dxf' || res.kind === 'pdf') ? '进入识图' : '打开';
+      })
+      .catch(function (e) { note(previewNote, String(e), 'bad'); });
+  }
+
+  document.getElementById('anyFile').addEventListener('change', function (event) {
+    preview(event.target.files[0]);
+  });
+
+  ['dragenter', 'dragover'].forEach(function (name) {
+    drop.addEventListener(name, function (event) {
+      event.preventDefault();
+      drop.classList.add('hot');
+    });
+  });
+  ['dragleave', 'drop'].forEach(function (name) {
+    drop.addEventListener(name, function (event) {
+      event.preventDefault();
+      drop.classList.remove('hot');
+    });
+  });
+  drop.addEventListener('drop', function (event) {
+    var file = event.dataTransfer.files[0];
+    if (file) preview(file);
+  });
+
+  openPreview.addEventListener('click', function () {
+    if (!previewUrl) return;
+    if (previewKind === 'dxf' || previewKind === 'pdf') {
+      // drawings go through the reader, not the viewer
+      if (previewKind === 'pdf') startPdf({ path: previewUrl }, previewNote);
+      else startJob({ path: previewUrl }, previewNote, true);
+      return;
+    }
+    window.open(previewUrl, '_blank');
+  });
+
+  loadRecent();
+  loadModels();
+  syncRead();
+})();
+</script>
+</body></html>

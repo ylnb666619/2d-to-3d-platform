@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__</title>
+<style>
+  :root { color-scheme: dark; --bg:#0b1220; --panel:#0f172a; --line:#1f2a44;
+          --ink:#e6edf7; --muted:#93a3bd; --accent:#22d3ee; }
+  * { box-sizing: border-box; }
+  body { margin:0; height:100vh; display:flex; flex-direction:column; background:var(--bg);
+         color:var(--ink); font:14px/1.6 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif; }
+  header { display:flex; align-items:center; gap:14px; padding:9px 16px; background:var(--panel);
+           border-bottom:1px solid var(--line); flex:0 0 auto; }
+  a.brand { color:inherit; text-decoration:none; font-weight:600; letter-spacing:.06em; }
+  a.brand:hover { color:var(--accent); }
+  a.back { color:var(--muted); text-decoration:none; font-size:12.5px;
+           border:1px solid var(--line); border-radius:999px; padding:3px 11px; }
+  a.back:hover { color:var(--ink); border-color:#2f4a72; }
+  .file { color:var(--muted); font-size:12.5px; overflow:hidden; text-overflow:ellipsis;
+          white-space:nowrap; max-width:32vw; }
+  .spacer { margin-left:auto; }
+  .scale { display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--muted); }
+  .scale input { width:64px; background:#0b1526; border:1px solid var(--line); color:var(--ink);
+                 border-radius:6px; padding:4px 7px; font:inherit; font-size:12.5px; }
+  main { flex:1 1 auto; display:grid; grid-template-columns:220px minmax(0,1fr) 320px; min-height:0; }
+  aside { background:var(--panel); overflow:auto; }
+  aside.left { border-right:1px solid var(--line); padding-bottom:16px; }
+  aside.right { border-left:1px solid var(--line); padding:12px 14px; }
+  h3 { font-size:11.5px; text-transform:uppercase; letter-spacing:.12em; color:var(--muted);
+       font-weight:600; margin:14px 14px 6px; }
+  aside.right h3 { margin:10px 0 6px; }
+  #pages { list-style:none; margin:0; padding:0 8px; }
+  #pages button { width:100%; text-align:left; border:0; background:transparent; color:var(--ink);
+                  padding:7px 10px; border-radius:7px; font:inherit; cursor:pointer; }
+  #pages button:hover { background:#16233a; }
+  #pages button.active { background:#ecfdf5; color:#065f46; font-weight:600; }
+  #pages .sub { display:block; color:var(--muted); font-size:11.5px; }
+  #pages button.active .sub { color:#065f46; }
+  .stage { position:relative; min-height:0; overflow:auto; background:#111827;
+           display:grid; place-items:start center; padding:12px; }
+  .stage img { max-width:100%; height:auto; border-radius:6px; box-shadow:0 10px 40px rgba(0,0,0,.5); }
+  .kv { display:flex; justify-content:space-between; gap:10px; padding:4px 0;
+        border-bottom:1px solid #16233a; font-size:12.5px; }
+  .kv span:last-child { color:#cbd5e1; font-variant-numeric:tabular-nums; }
+  table { width:100%; border-collapse:collapse; font-size:12px; margin-top:6px; }
+  th { text-align:left; color:var(--muted); font-weight:500; border-bottom:1px solid var(--line);
+       padding:4px 3px; }
+  td { padding:3px; border-bottom:1px solid #16233a; }
+  td.num { text-align:right; font-variant-numeric:tabular-nums; }
+  .note { color:var(--muted); font-size:11.5px; line-height:1.5; margin-top:10px; }
+  .warn { color:#fbbf24; }
+</style></head>
+<body>
+<header>
+  <a class="brand" href="/">重装武神</a>
+  <a class="back" href="/">← 首页</a>
+  <span class="file" id="file">__TITLE__</span>
+  <span class="spacer"></span>
+  <label class="scale">出图比例 1:<input id="scale" type="number" value="100" min="10" max="500" step="5"></label>
+</header>
+<main>
+  <aside class="left">
+    <h3>页</h3>
+    <ul id="pages"></ul>
+  </aside>
+  <section class="stage" id="stage"><img id="sheet" alt=""></section>
+  <aside class="right">
+    <h3>这一页</h3>
+    <div id="stats"></div>
+    <h3>房间（按面积）</h3>
+    <div id="rooms"></div>
+    <div class="note">红线是识别到的长线（墙、轴线、尺寸线都在里面），
+      蓝框是按「墨线围出的空洞」得到的房间。房间面积随上面的出图比例重算；
+      比例不对，面积就会整体偏。</div>
+  </aside>
+</main>
+<script>
+const PAGES = __PAGES__;
+let current = 0;
+let drawingScale = 100;
+
+const list = document.getElementById('pages');
+PAGES.forEach(function (page, index) {
+  const li = document.createElement('li');
+  const button = document.createElement('button');
+  button.innerHTML = '第 ' + (index + 1) + ' 页<span class="sub">' +
+    page.rooms.length + ' 个房间 · ' + page.stats.ink + '% 墨</span>';
+  button.className = index === 0 ? 'active' : '';
+  button.addEventListener('click', function () { select(index); });
+  li.appendChild(button);
+  list.appendChild(li);
+});
+
+function mmPerPx(page) {
+  return page.pageMm[0] / page.size[0] * drawingScale;
+}
+
+function select(index) {
+  current = index;
+  list.querySelectorAll('button').forEach(function (node, i) {
+    node.className = i === index ? 'active' : '';
+  });
+  const page = PAGES[index];
+  document.getElementById('sheet').src = page.image;
+  document.getElementById('file').textContent = page.title || '';
+
+  const mm = mmPerPx(page);
+  const areas = page.rooms.map(function (room) {
+    const b = room.bounds;
+    return (b[2] - b[0]) * (b[3] - b[1]) * mm * mm / 1e6;
+  });
+  const total = areas.reduce(function (a, b) { return a + b; }, 0);
+
+  const stats = [
+    ['识别房间', page.rooms.length + ' 个'],
+    ['总面积', total.toFixed(0) + ' m²'],
+    ['墨线占比', page.stats.ink + '%'],
+    ['横/竖长线', page.stats.horizontalStrokes + ' / ' + page.stats.verticalStrokes],
+    ['像素比', mm.toFixed(2) + ' mm/px'],
+    ['图幅', page.pageMm[0].toFixed(0) + ' × ' + page.pageMm[1].toFixed(0) + ' mm']
+  ];
+  document.getElementById('stats').innerHTML = stats.map(function (row) {
+    return '<div class="kv"><span>' + row[0] + '</span><span>' + row[1] + '</span></div>';
+  }).join('');
+
+  const order = page.rooms.map(function (room, i) { return [areas[i], room]; })
+    .sort(function (a, b) { return b[0] - a[0]; }).slice(0, 60);
+  const rows = order.map(function (pair, i) {
+    const b = pair[1].bounds;
+    return '<tr><td>#' + (i + 1) + '</td><td class="num">' + pair[0].toFixed(1) +
+      '</td><td class="num">' + (b[2] - b[0]) + '×' + (b[3] - b[1]) + '</td></tr>';
+  }).join('');
+  document.getElementById('rooms').innerHTML =
+    '<table><thead><tr><th>房间</th><th class="num">面积 m²</th><th class="num">像素</th></tr></thead><tbody>' +
+    rows + '</tbody></table>';
+}
+
+document.getElementById('scale').addEventListener('input', function (event) {
+  drawingScale = Number(event.target.value) || 100;
+  select(current);
+});
+
+select(0);
+</script>
+</body></html>
